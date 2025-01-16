@@ -4,6 +4,15 @@ from urllib.parse import urlparse, parse_qs
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
+        def send_cors_headers(self):
+        # Send comprehensive CORS headers
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+            self.send_header('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, Authorization')
+            self.send_header('Access-Control-Max-Age', '3600')
+            # Additional headers that might be needed
+            self.send_header('Vary', 'Origin')
+            self.send_header('Access-Control-Expose-Headers', 'Content-Length, Content-Range')
         # Data for students and their marks
         students_data = [
             {"name": "nk", "marks": 0},
@@ -107,39 +116,37 @@ class handler(BaseHTTPRequestHandler):
             {"name": "uq", "marks": 7},
             {"name": "I93zNDORY", "marks": 10}
         ]
+        try:
+            # Parse query parameters
+            query = parse_qs(urlparse(self.path).query)
+            names = query.get("name", [])
 
-        # Parse query parameters
-        query = parse_qs(urlparse(self.path).query)
-        names = query.get("name", [])
+            # Prepare the response marks
+            marks = []
+            for name in names:
+                student = next((s for s in students_data if s["name"] == name), None)
+                marks.append(student["marks"] if student else None)
 
-        # Prepare the response marks
-        marks = []
-        for name in names:
-            # Fetch marks for each student name
-            student = next((s for s in students_data if s["name"] == name), None)
-            if student:
-                marks.append(student["marks"])
-            else:
-                marks.append(None)
+            response = {"marks": marks}
+            
+            # Send response with enhanced CORS headers
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.send_cors_headers()
+            self.end_headers()
+            
+            self.wfile.write(json.dumps(response).encode('utf-8'))
 
-        # Return response as JSON
-        response = {"marks": marks}
-        
-        # Send CORS headers
-        self.send_response(200)
-        self.send_header('Content-type', 'application/json')
-        self.send_header('Access-Control-Allow-Origin', '*')  # Allow all domains (for development)
-        self.send_header('Access-Control-Allow-Methods', 'GET, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
-        self.end_headers()
-        
-        # Write response body
-        self.wfile.write(json.dumps(response).encode('utf-8'))
+        except Exception as e:
+            self.send_response(500)
+            self.send_header('Content-Type', 'application/json')
+            self.send_cors_headers()
+            self.end_headers()
+            self.wfile.write(json.dumps({"error": str(e)}).encode('utf-8'))
 
     def do_OPTIONS(self):
-        # Handle preflight requests for CORS
-        self.send_response(200)
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header('Access-Control-Allow-Methods', 'GET, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        # Enhanced OPTIONS handling for preflight requests
+        self.send_response(204)  # No Content
+        self.send_header('Content-Length', '0')
+        self.send_cors_headers()
         self.end_headers()
