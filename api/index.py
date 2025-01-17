@@ -107,6 +107,14 @@ students_data = [
 
 class RequestHandler(BaseHTTPRequestHandler):
     def do_GET(self):
+        # Add CORS headers
+        self.send_response(200)
+        self.send_header('Content-type', 'application/json')
+        self.send_header('Access-Control-Allow-Origin', '*')  # Allow all origins
+        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        self.end_headers()
+
         # Parse the query string
         query_components = parse_qs(urlparse(self.path).query)
 
@@ -117,21 +125,22 @@ class RequestHandler(BaseHTTPRequestHandler):
             self.handle_home()
 
     def handle_home(self):
-        self.send_response(200)
-        self.send_header('Content-type', 'application/json')
-        self.end_headers()
         response = {"message": "Hello!"}
         self.wfile.write(json.dumps(response).encode('utf-8'))
 
     def handle_api(self, query_components):
         names = query_components.get('name', [])
         marks = [student['marks'] for student in students_data if student['name'] in names]
-
-        self.send_response(200)
-        self.send_header('Content-type', 'application/json')
-        self.end_headers()
         response = {"marks": marks}
         self.wfile.write(json.dumps(response).encode('utf-8'))
+
+    def do_OPTIONS(self):
+        # Handle preflight requests for CORS
+        self.send_response(200)
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        self.end_headers()
 
 def run(server_class=HTTPServer, handler_class=RequestHandler, port=8000):
     server_address = ('', port)
