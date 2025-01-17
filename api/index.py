@@ -54,11 +54,13 @@ class handler(BaseHTTPRequestHandler):
         requested_names = [param.split("=")[-1] for param in params if param.startswith("name=")]
         
         # Get marks for the names in the query parameters
-        marks = {entry["name"]: entry["marks"] for entry in students_data if entry["name"] in requested_names}
+        # Get marks for the names in the query parameters
+        marks = [entry["marks"] for entry in students_data if entry["name"] in requested_names]
         
-        # Create a JSON response
+        # Create a JSON response with marks as a list
         response = {
             "marks": marks  # List of marks
         }
+        
         # Write the JSON response
         self.wfile.write(json.dumps(response).encode("utf-8"))
