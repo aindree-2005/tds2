@@ -1,6 +1,6 @@
-from flask import Flask, request, jsonify
-
-app = Flask(__name__)
+import json
+from http.server import BaseHTTPRequestHandler, HTTPServer
+from urllib.parse import urlparse, parse_qs
 
 students_data = [
   {"name": "nk", "marks": 0},
@@ -105,18 +105,39 @@ students_data = [
   {"name": "I93zNDORY", "marks": 10}
 ];
 
-@app.route('/api', methods=['GET'])
-def get_marks():
-    # Get the 'name' query parameters
-    names = request.args.getlist('name')
-    
-    # Find marks for the requested names
-    marks = []
-    for name in names:
-        # Search for the name in the students_data list
-        student = next((s for s in students_data if s["name"] == name), None)
-        # Append the marks if the student is found, else append None
-        marks.append(student["marks"] if student else None)
-    
-    # Return the marks as a JSON response
-    return jsonify({"marks": marks})
+class RequestHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        # Parse the query string
+        query_components = parse_qs(urlparse(self.path).query)
+
+        # Check the path and handle accordingly
+        if self.path.startswith('/api'):
+            self.handle_api(query_components)
+        else:
+            self.handle_home()
+
+    def handle_home(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'application/json')
+        self.end_headers()
+        response = {"message": "Hello!"}
+        self.wfile.write(json.dumps(response).encode('utf-8'))
+
+    def handle_api(self, query_components):
+        names = query_components.get('name', [])
+        marks = [student['marks'] for student in students_data if student['name'] in names]
+
+        self.send_response(200)
+        self.send_header('Content-type', 'application/json')
+        self.end_headers()
+        response = {"marks": marks}
+        self.wfile.write(json.dumps(response).encode('utf-8'))
+
+def run(server_class=HTTPServer, handler_class=RequestHandler, port=8000):
+    server_address = ('', port)
+    httpd = server_class(server_address, handler_class)
+    print(f"Server running on port {port}")
+    httpd.serve_forever()
+
+if __name__ == "__main__":
+    run()
