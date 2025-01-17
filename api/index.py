@@ -52,10 +52,13 @@ class handler(BaseHTTPRequestHandler):
         query = self.path.split("?")[-1] if "?" in self.path else ""
         params = query.split("&")
         requested_names = [param.split("=")[-1] for param in params if param.startswith("name=")]
+        # Get marks for the names in the query parameters in the correct order
+        marks = []
+        for name in requested_names:  # This preserves the order
+            for entry in students_data:
+                if entry["name"] == name:
+                    marks.append(entry["marks"])
         
-        # Get marks for the names in the query parameters
-        # Get marks for the names in the query parameters
-        marks = [entry["marks"] for entry in students_data if entry["name"] in requested_names]
         
         # Create a JSON response with marks as a list
         response = {
