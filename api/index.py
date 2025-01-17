@@ -1,8 +1,8 @@
-export const config = {
-  runtime: 'edge'
-};
+from flask import Flask, request, jsonify
 
-const studentsData = [
+app = Flask(__name__)
+
+students_data = [
   {"name": "nk", "marks": 0},
   {"name": "gy5", "marks": 81},
   {"name": "iWe7ZbxL", "marks": 45},
@@ -105,56 +105,18 @@ const studentsData = [
   {"name": "I93zNDORY", "marks": 10}
 ];
 
-export default async function handler(req) {
-  // Set up CORS headers
-  const corsHeaders = {
-    'Access-Control-Allow-Origin': '*', // Allow all origins
-    'Access-Control-Allow-Methods': 'GET, HEAD, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    'Access-Control-Max-Age': '86400',
-  };
-
-  // Handle preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response(null, {
-      status: 204,
-      headers: corsHeaders
-    });
-  }
-
-  try {
-    // Parse the URL and query parameters
-    const url = new URL(req.url);
-    const names = url.searchParams.getAll('name');
-
-    // Get marks for requested names
-    const marks = names.map(name => {
-      const student = studentsData.find(s => s.name === name);
-      return student ? student.marks : null;
-    });
-
-    // Create response object
-    const responseData = {
-      marks: marks
-    };
-
-    // Return the response with CORS headers
-    return new Response(JSON.stringify(responseData), {
-      status: 200,
-      headers: {
-        ...corsHeaders,
-        'Content-Type': 'application/json'
-      }
-    });
-
-  } catch (error) {
-    // Handle errors
-    return new Response(JSON.stringify({ error: 'Internal Server Error' }), {
-      status: 500,
-      headers: {
-        ...corsHeaders,
-        'Content-Type': 'application/json'
-      }
-    });
-  }
-}
+@app.route('/api', methods=['GET'])
+def get_marks():
+    # Get the 'name' query parameters
+    names = request.args.getlist('name')
+    
+    # Find marks for the requested names
+    marks = []
+    for name in names:
+        # Search for the name in the students_data list
+        student = next((s for s in students_data if s["name"] == name), None)
+        # Append the marks if the student is found, else append None
+        marks.append(student["marks"] if student else None)
+    
+    # Return the marks as a JSON response
+    return jsonify({"marks": marks})
