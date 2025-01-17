@@ -58,9 +58,7 @@ class handler(BaseHTTPRequestHandler):
         
         # Create a JSON response
         response = {
-            "message": "Marks fetched successfully.",
-            "marks": marks
+            "marks": marks  # List of marks
         }
-        
         # Write the JSON response
         self.wfile.write(json.dumps(response).encode("utf-8"))
